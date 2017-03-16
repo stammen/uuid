@@ -48,6 +48,8 @@
 #   include <boost/detail/winapi/timers.hpp>
 #   include <boost/detail/winapi/process.hpp>
 #   include <boost/detail/winapi/thread.hpp>
+#   include <boost/predef/platform.h>
+
 #else 
 #   include <sys/time.h>  // for gettimeofday
 #   include <sys/types.h> // for pid_t
@@ -92,6 +94,9 @@ public:
         , random_(NULL)
     {
 #if defined(BOOST_WINDOWS)
+#if BOOST_PLAT_WINDOWS_RUNTIME
+        random_ = NULL;
+#else
         if (!boost::detail::winapi::CryptAcquireContextA(
                     &random_,
                     NULL,
@@ -101,6 +106,7 @@ public:
         {
             random_ = NULL;
         }
+#endif
 #else
         random_ = std::fopen( "/dev/urandom", "rb" );
 #endif
@@ -112,7 +118,9 @@ public:
     {
         if (random_) {
 #if defined(BOOST_WINDOWS)
+    #if !defined(BOOST_PLAT_WINDOWS_RUNTIME )
             boost::detail::winapi::CryptReleaseContext(random_, 0);
+    #endif
 #else
             std::fclose(random_);
 #endif
@@ -160,7 +168,9 @@ private:
             // intentionally left uninitialized
             unsigned char state[ 20 ];
 #if defined(BOOST_WINDOWS)
+    #if !defined(BOOST_PLAT_WINDOWS_RUNTIME)
             boost::detail::winapi::CryptGenRandom(random_, sizeof(state), state);
+    #endif
 #else
             ignore_size(std::fread( state, 1, sizeof(state), random_ ));
 #endif
